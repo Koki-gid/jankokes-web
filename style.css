@@ -659,8 +659,8 @@ img { max-width: 100%; display: block; }
   min-height: 1.2em;
 }
 
-.form-status.success { color: #1a9e5c; }
-.form-status.error { color: #d6463f; }
+.form-status.success { color: #13703f; background: #e6f6ec; border: 1px solid #9fd8b4; border-radius: 12px; padding: 14px 16px; font-weight: 600; font-size: 1.05rem; }
+.form-status.error { color: #a8322c; background: #fdecea; border: 1px solid #f2b8b3; border-radius: 12px; padding: 14px 16px; font-weight: 600; }
 
 /* ===== FOOTER ===== */
 .footer {

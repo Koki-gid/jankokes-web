@@ -18,7 +18,8 @@ if (navToggle && navMobile) {
   });
 }
 
-// Contact form submission via Web3Forms
+// Contact form: Google Apps Script (tabulka + e-mail z Gmailu) a záloha ve Web3Forms
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzijlvcr6xOObYkLgeaEVG6DMkNxizsRp6Za1JyOJr1DO3xX-GkJudHrA3vOfsJ3EmN/exec';
 const form = document.getElementById('contactForm');
 const status = document.getElementById('formStatus');
 
@@ -32,28 +33,40 @@ if (form) {
     status.textContent = '';
     status.className = 'form-status';
 
-    try {
-      const formData = new FormData(form);
-      const response = await fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: { 'Accept': 'application/json' },
-      });
-      const result = await response.json();
+    const formData = new FormData(form);
+    if (!formData.get('zdroj')) formData.set('zdroj', location.pathname);
 
-      if (result.success) {
-        status.textContent = 'Děkuji za zprávu! Ozvu se vám během 24 hodin.';
-        status.classList.add('success');
-        form.reset();
-      } else {
-        throw new Error(result.message || 'Něco se nepovedlo.');
-      }
-    } catch (err) {
-      status.textContent = 'Zprávu se nepodařilo odeslat. Zkuste to prosím znovu nebo mi napište přímo na email.';
+    const toGoogle = fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      keepalive: true,
+      body: new URLSearchParams(formData),
+    }).then(() => true).catch(() => false);
+
+    const toWeb3Forms = fetch(form.action, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Accept': 'application/json' },
+    }).then((r) => r.json()).then((r) => !!r.success).catch(() => false);
+
+    // Úspěch hned, jakmile potvrdí kterákoli cesta (Google bývá pomalejší, dojede i po zavření stránky).
+    const ok = await new Promise((resolve) => {
+      let pending = 2;
+      const done = (v) => { if (v) resolve(true); else if (--pending === 0) resolve(false); };
+      toGoogle.then(done);
+      toWeb3Forms.then(done);
+    });
+
+    if (ok) {
+      status.textContent = '✅ Děkuji, zpráva odešla! Ozvu se vám do 24 hodin.';
+      status.classList.add('success');
+      form.reset();
+    } else {
+      status.textContent = 'Zprávu se nepodařilo odeslat. Zkuste to prosím znovu nebo mi napište přímo na jankokes.ai@gmail.com.';
       status.classList.add('error');
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalText;
     }
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+    status.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 }
