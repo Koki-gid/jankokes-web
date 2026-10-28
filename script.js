@@ -47,7 +47,14 @@ if (form) {
       method: 'POST',
       body: formData,
       headers: { 'Accept': 'application/json' },
-    }).then((r) => r.json()).then((r) => !!r.success).catch(() => false);
+    }).then((r) => r.json()).then((r) => {
+      const confirmed = r.success === true;
+      // Only a confirmed delivery counts; Google's opaque response is not a receipt.
+      if (confirmed && formData.get('zdroj') === 'second-mind') {
+        document.dispatchEvent(new CustomEvent('secondmind:lead-confirmed'));
+      }
+      return confirmed;
+    }).catch(() => false);
 
     // Úspěch hned, jakmile potvrdí kterákoli cesta (Google bývá pomalejší, dojede i po zavření stránky).
     const ok = await new Promise((resolve) => {
